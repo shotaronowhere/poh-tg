@@ -2,7 +2,7 @@
 
 Telegram notification bot for [Proof of Humanity](app.proofofhumanity.id/).
 
-Subscribe to @[ProofOfHumanityNotifications](https://t.me/ProofOfHumanityNotifications). Updated every 15 min.
+Subscribe to [@ProofOfHumanityNotifications](https://t.me/ProofOfHumanityNotifications). Updated every 15 min.
 
 ## Installation
 
