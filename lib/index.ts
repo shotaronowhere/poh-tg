@@ -59,8 +59,7 @@ const exit = async () => {
     const msg = `***${escape(file2.name)}'s*** [submission](${url_poh}) is challenged for ***${challenge.requests[0].currentReason}***.\n\n`
     const msgRemoval = `The ***removal*** request for ***${file2.name}'s*** [profile](${url_poh}) is challenged.\n\n`
     queue.add(async () => {try{bot.sendPhoto(process.env.CHAT_ID, photo_url, {caption: challenge.status === "PendingRemoval"? msgRemoval: msg, parse_mode: "Markdown"})}catch{}});
-    if (challenge.status === "PendingRegistration")
-      queue.add(async () => {try{bot.sendVideo(process.env.CHAT_ID, video_url, {caption: `***${challenge.id}***\n\nAddress should match ***${file2.name}'s*** submission [video](${video_url}).`, parse_mode: "Markdown"})}catch{}});
+    queue.add(async () => {try{bot.sendVideo(process.env.CHAT_ID, video_url, {caption: `***${challenge.id}***\n\nAddress should match ***${file2.name}'s*** submission [video](${video_url}).`, parse_mode: "Markdown"})}catch{}});
   }
   
   const appeal_query = `{
@@ -113,8 +112,7 @@ const exit = async () => {
     const video_url = `https://ipfs.kleros.io${file2.video}`
     const msg = `***${file2.name}'s*** challenged [submission](${url_poh})\nReason: ***${appeal.reason}***\n\nThe dispute concluded it's current round. The submission is ***${currentRuling == 1? 'accepted' : 'rejected'}***.\n\nIs this outcome correct? If not, you can request an [appeal](${url_poh}) until ***${appeal_deadline_loser.substring(0, appeal_deadline_loser.length-7)} UTC***.`
     queue.add(async () => {try{bot.sendPhoto(process.env.CHAT_ID, photo_url, {caption: msg, parse_mode: "Markdown"})}catch{}});
-    if (appeal.request.submission.status === "PendingRegistration")
-      queue.add(async () => {try{bot.sendVideo(process.env.CHAT_ID, video_url, {caption: `***${appeal.requester}***\n\nAddress should match ***${file2.name}'s*** [video](${video_url}).`, parse_mode: "Markdown"})}catch{}});
+    queue.add(async () => {try{bot.sendVideo(process.env.CHAT_ID, video_url, {caption: `***${appeal.requester}***\n\nAddress should match ***${file2.name}'s*** [video](${video_url}).`, parse_mode: "Markdown"})}catch{}});
 });
 
 const query_contrib = `{
@@ -165,8 +163,7 @@ const contrib_info = await request(
     const msg = `An ***appeal*** is funded for the dispute over ***${escape(file2.name)}'s*** [submission](${url_poh}) which is challenged for ***${contribution.round.challenge.request.currentReason}***.\n\n${msg_contrib}`
     const msgRemoval = `An ***appeal*** is funded for the dispute over the ***removal*** request for ***${file2.name}'s*** [profile](${url_poh}) is challenged.\n\n${msg_contrib}`
     queue.add(async () => {try{bot.sendPhoto(process.env.CHAT_ID, photo_url, {caption: contribution.round.challenge.request.submission.status === "PendingRemoval"? msgRemoval: msg, parse_mode: "Markdown"})}catch{}});
-    if (contribution.round.challenge.request.submission.status === "PendingRegistration")
-      queue.add(async () => {try{bot.sendVideo(process.env.CHAT_ID, video_url, {caption: `***${contribution.round.challenge.request.submission.id}***\n\nAddress should match ***${file2.name}'s*** submission [video](${video_url}).`, parse_mode: "Markdown"})}catch{}});
+    queue.add(async () => {try{bot.sendVideo(process.env.CHAT_ID, video_url, {caption: `***${contribution.round.challenge.request.submission.id}***\n\nAddress should match ***${file2.name}'s*** submission [video](${video_url}).`, parse_mode: "Markdown"})}catch{}});
   }
 
   await queue.onEmpty()
