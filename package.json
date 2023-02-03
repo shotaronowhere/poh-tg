@@ -14,8 +14,7 @@
     "typescript": "^4.9.4"
   },
   "scripts": {
-    "start": "npx ts-node index.ts --esModuleInterop",
-    "create-db": "npx ts-node create-db.ts",
-    "cron": "npx ts-node index.ts"
+    "start": "npx ts-node lib/index.ts --esModuleInterop",
+    "create-db": "npx ts-node lib/create-db.ts"
   }
 }
