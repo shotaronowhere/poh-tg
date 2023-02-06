@@ -26,14 +26,13 @@ const exit = async () => {
 
   
 (async ()=> {
-  const currentTime = Math.floor(Date.now()/1000)
-  const history = getCron(db)?? {
-        last_timestamp: currentTime,
-    }
-
+  const history = getCron(db)?? {last_timestamp: Math.floor(Date.now()/1000)}
+  history.last_timestamp = 1675703123
+  var maxSyncTime = 0
     const queryAllSubmissions = `{
       submissions(first: 1000, where: {creationTime_gt: ${history.last_timestamp}}) {
         id
+        creationTime
         status
         name
         requests{
@@ -49,8 +48,10 @@ const exit = async () => {
         queryAllSubmissions
     );
   
-    
+
     for(const submission of POH.submissions){
+      if (submission.creationTime > maxSyncTime)
+        maxSyncTime = submission.creationTime
       const url_poh = `https://app.proofofhumanity.id/profile/${submission.id}`
       try{
         const evidence = await ipfsFetch(submission.requests[0].evidence[0].URI)
@@ -69,7 +70,7 @@ const exit = async () => {
     }
     
 
-  const query = "query indexQuery(  $skip: Int = 0  $first: Int = 1000  $where: Submission_filter = {removed: false}  $search: String = \"\"  $address: ID) {  submissions(orderBy: creationTime, orderDirection: desc, skip: $skip, first: $first, where: $where) {    id    ...submissionCardSubmission  }  contains: submissions(where: {name_contains: $search}) {    id     ...submissionCardSubmission}  byAddress: submissions(where: {id: $address}) {    id      }  counter(id: 1) {    vouchingPhase    pendingRemoval    pendingRegistration    challengedRemoval    challengedRegistration    registered    expired    removed    id  }}fragment submissionCardSubmission on Submission {  id  status  registered  submissionTime  name  disputed  requests(orderBy: creationTime, orderDirection: desc, first: 1, where: {registration: true}) {    evidence(orderBy: creationTime, first: 1) {      URI      id    } challenges(orderBy: creationTime, first: 1) {      disputeID      id    creationTime request}    id   lastStatusChange    currentReason}}"
+  const query = "query indexQuery(  $skip: Int = 0  $first: Int = 1000  $where: Submission_filter = {removed: false}  $search: String = \"\"  $address: ID) {  submissions(orderBy: creationTime, orderDirection: desc, skip: $skip, first: $first, where: $where) {    id    ...submissionCardSubmission  }  contains: submissions(where: {name_contains: $search}) {    id     ...submissionCardSubmission}  byAddress: submissions(where: {id: $address}) {    id      }  counter(id: 1) {    vouchingPhase    pendingRemoval    pendingRegistration    challengedRemoval    challengedRegistration    registered    expired    removed    id  }}fragment submissionCardSubmission on Submission {  id  status  registered  creationTime submissionTime  name  disputed  requests(orderBy: creationTime, orderDirection: desc, first: 1, where: {registration: true}) {  creationTime  evidence(orderBy: creationTime, first: 1) {      URI      id    } challenges(orderBy: creationTime, first: 1) {      disputeID      id    creationTime request}    id   lastStatusChange    currentReason}}"
   const challenges = await request(
       process.env.POH_SUBGRAPH ?? "",
       query,
@@ -89,6 +90,8 @@ const exit = async () => {
   
   for(const challenge of challenges.submissions){
     try{
+      if (challenge.requests[0].lastStatusChange > maxSyncTime)
+        maxSyncTime = challenge.requests[0].lastStatusChange
       const url_poh = `https://app.proofofhumanity.id/profile/${challenge.id}`
       const evidence = await ipfsFetch(challenge.requests[0].evidence[0].URI)
       const registrationJSONIPFS = (await evidence.json()).fileURI;
@@ -108,6 +111,7 @@ const exit = async () => {
   const appeal_query = `{
     disputes(first: 100,  orderBy: disputeID, orderDirection: desc,  where: {period: appeal, ruled: false, lastPeriodChange_gt: ${history.last_timestamp},arbitrable_: {id: "${process.env.POH_ADDRESS}"}}){
 	    currentRulling
+      lastPeriodChange
     disputeID
   }
 }`
@@ -119,6 +123,7 @@ const exit = async () => {
 
   let disputeIDs = appeals.disputes.map(({ disputeID }) => disputeID)
   let currentRulings = appeals.disputes.map(({ currentRulling }) => currentRulling)
+  let lastPeriodChanges = appeals.disputes.map(({ lastPeriodChange }) => lastPeriodChange)
 
 
     const disputeIdToProfileQuery = `{
@@ -144,6 +149,8 @@ const exit = async () => {
   
   appeals_info.challenges.forEach(async function (appeal, i) {
     try{
+      if (lastPeriodChanges[i] > maxSyncTime)
+        maxSyncTime = lastPeriodChanges[i]
       const url_poh = `https://app.proofofhumanity.id/profile/${appeal.requester}`
       const appeal_deadline_winner = new Date(appeal.appealPeriod[1]*1000).toDateString()
       const appeal_deadline_loser = new Date((Number(appeal.appealPeriod[0])+(Number(appeal.appealPeriod[1]) - Number(appeal.appealPeriod[0])) / 2)*1000).toUTCString()
@@ -198,6 +205,8 @@ const contrib_info = await request(
       continue
     if (!contribution.round.hasPaid[0] && !contribution.round.hasPaid[1])
       continue
+    if (contribution.creationTime > maxSyncTime)
+      maxSyncTime = contribution.creationTime
     try{
       const url_poh = `https://app.proofofhumanity.id/profile/${contribution.round.challenge.request.submission.id}`
       const evidence = await ipfsFetch(contribution.round.challenge.request.evidence[0].URI)
@@ -217,7 +226,8 @@ const contrib_info = await request(
   }
 
   await queue.onEmpty()
-  setCron(db, currentTime)
+  if (maxSyncTime > 0)
+    setCron(db, maxSyncTime)
 
 })()
 
