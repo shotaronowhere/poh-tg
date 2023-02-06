@@ -27,7 +27,7 @@ const exit = async () => {
   
 (async ()=> {
   const history = getCron(db)?? {last_timestamp: Math.floor(Date.now()/1000)}
-  history.last_timestamp = 1675703123
+
   var maxSyncTime = 0
     const queryAllSubmissions = `{
       submissions(first: 1000, where: {creationTime_gt: ${history.last_timestamp}}) {
